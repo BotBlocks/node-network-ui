@@ -3,8 +3,8 @@
 function nodeOb(canvas, id, posX, posY){
 	this.ID = id;
 	this.backColor = '#555555';
-	this.fillColor = '#777799';
-	this.selColor = '#AAAACC';
+	this.fillColor = '#9999aa';
+	this.selColor = '#ccccdd';
 	this.canvas = canvas;
 
 	this.buffer = 10;
@@ -22,6 +22,8 @@ function nodeOb(canvas, id, posX, posY){
 
 	var rect = this.canvas.getBoundingClientRect();
 	this.ctx = canvas.getContext("2d");
+	this.ctx.lineCap = "round";
+	this.ctx.lineJoin = "round";
 	this.ctx.roundRect(this.position.x, this.position.y, this.width, this.height, this.buffer);
 	//this.ctx.fillRect(this.position.x, this.position.y, this.width, this.height);
 
@@ -90,10 +92,21 @@ nodeOb.prototype.redrawMe = function redrawMe(x, y, w, h) {
 	this.ctx.roundRect(x, y, w, h, this.buffer);
 
 	this.ctx.beginPath();
+	this.ctx.strokeStyle = '#444444';
+	this.ctx.lineWidth = 2;
 	this.ctx.moveTo(this.position.x, this.position.y + this.buffer + this.buffer / 2);
 	this.ctx.lineTo(this.position.x + this.width, this.position.y + this.buffer + this.buffer / 2);
-	this.ctx.lineWidth = 2;
-	this.ctx.strokeStyle = '#444444';
+	this.ctx.stroke();
+	this.ctx.closePath();
+	this.ctx.beginPath();
+
+	this.ctx.strokeStyle = '#aaaaaa';
+	this.ctx.lineWidth = 1;
+	this.ctx.moveTo(this.position.x + this.width - this.buffer, this.position.y + this.height - this.buffer);
+	this.ctx.lineTo(this.position.x + this.width, this.position.y + this.height - this.buffer);
+	this.ctx.lineTo(this.position.x + this.width - this.buffer, this.position.y + this.height);
+	this.ctx.lineTo(this.position.x + this.width - this.buffer, this.position.y + this.height - this.buffer);
+	
 	this.ctx.stroke();
 
 	this.drawInputPoints();
@@ -114,17 +127,37 @@ nodeOb.prototype.getAttrs = function getAttrs() {
 
 nodeOb.prototype.arrangeMenus = function arrangeMenus() {
 	var i = 0;
-	for (var key in this.inputFields) {
-		if(this.inputFields.hasOwnProperty(key)) {
-			this.inputFields[key].style.left = this.buffer + this.position.x + "px";
-			this.inputFields[key].style.top = this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO - 12 + "px";
-			i++;
+	this.ctx.fillStyle = '#000000';
+	this.ctx.font = '8pt Tahoma';
+	this.ctx.fillText(this.ID, this.position.x + this.width - 2 * this.buffer - this.ID.length * 5, this.position.y + this.buffer + 2);
+	if (this.selected) {
+		for (var key in this.inputFields) {
+			if(this.inputFields.hasOwnProperty(key)) {
+				this.inputFields[key].style.visibility = 'visible';
+				this.inputFields[key].style.left = this.buffer + this.position.x + "px";
+				this.inputFields[key].style.top = this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO - 12 + "px";
+				i++;
+			}
 		}
+	} else if (!this.selected) {
+		for (var key in this.inputFields) {
+			if(this.inputFields.hasOwnProperty(key)) {
+				this.inputFields[key].style.visibility = 'hidden';
+				this.ctx.fillText(this.inputFields[key].value, this.buffer + this.position.x + 3, this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO + 4);// - 12);
+				i++;
+			}
+		}	
 	}
 	if (this.scriptFields[0] == undefined) return;
-	this.scriptFields[0 + ''].style.top = this.position.y + 3 * this.buffer - 12 + "px";
-	this.scriptFields[0 + ''].style.left = this.position.x + this.width - 100 + "px";
-	this.scriptFields[0 + ''].style.width = 70 + "px";
+	if (this.selected) {
+		this.scriptFields[0 + ''].style.visibility = 'visible';
+		this.scriptFields[0 + ''].style.top = this.position.y + 3 * this.buffer - 12 + "px";
+		this.scriptFields[0 + ''].style.left = this.position.x + this.width - 100 + "px";
+		this.scriptFields[0 + ''].style.width = 70 + "px";
+	} else if (!this.selected) {
+		this.scriptFields[0 + ''].style.visibility = 'hidden';
+		this.ctx.fillText(this.scriptFields[0 + ''].value, this.position.x + this.width - 100, this.position.y + 3 * this.buffer + 3);// - 12);
+	}
 }
 
 //Graphical Input points are managed here (not real connections).
@@ -159,10 +192,22 @@ nodeOb.prototype.addScriptField = function addScriptField() {
 //Real connections to other nodes are recorded via this function. Tested as input or output (sourceIO) to the current node. Indeces are also recorded (IOindex).
 nodeOb.prototype.addConnection = function addConnection(connectedNode, otherIndex, localIndex, inputOrOutput) {
 	if (inputOrOutput) {
+//		for (var key in this.inputs) {
+//			if ((localIndex == this.inputs[key].localIndex) || connectedNode == this.inputs[key].node && otherIndex == this.inputs[key].otherIndex && localIndex == this.inputs[key].localIndex) {
+//				return;
+//			}
+//		}
 		this.inputs[this.lenInputs] = { "node": connectedNode, "otherIndex": otherIndex, "localIndex": localIndex };
+		//this.inputs[localIndex] = { "node": connectedNode, "otherIndex": otherIndex, "localIndex": localIndex };
 		this.lenInputs++;
 	} else if (!inputOrOutput) {
+//		for (var key in this.outputs) {
+//			if ( (connectedNode == this.outputs[key].node && otherIndex == this.outputs[key].otherIndex) || connectedNode == this.outputs[key].node && otherIndex == this.outputs[key].otherIndex && localIndex == this.outputs[key].localIndex) {
+//				return;
+//			}
+//		}
 		this.outputs[this.lenOutputs] = { "node": connectedNode, "otherIndex": otherIndex, "localIndex": localIndex };
+		//this.outputs[localIndex] = { "node": connectedNode, "otherIndex": otherIndex, "localIndex": localIndex };
 		this.lenOutputs++;
 	}
 }
@@ -249,6 +294,31 @@ nodeOb.prototype.setSelected = function (flag) {
 
 nodeOb.prototype.getSelected = function () {
 	return this.selected;
+}
+
+nodeOb.prototype.inputIndexIsTaken = function (index) {
+	if (this.inputs[0] == undefined) {
+		return false;
+	} else {
+		for (var key in this.inputs) {
+			//console.log(this.inputs);
+			if (this.inputs[key].localIndex == index) {
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+}
+
+nodeOb.prototype.outputIndexIsTaken = function () {
+	for (var key in this.outputs) {
+		if (this.outputs[key].localIndex == index) {
+			return true;
+		} else {
+			return false;
+		}
+	}
 }
 
 nodeOb.prototype.minSizeAdjustment = function () {

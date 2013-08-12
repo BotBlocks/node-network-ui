@@ -10,6 +10,8 @@ function panelGrabber ( canvas ) {
 
 	this.backColor = '#555555';
 	this.ctx = this.canvas.getContext('2d');
+	this.ctx.lineCap = "round";
+	this.ctx.lineJoin = "round";
 	this.netDump;
 
 	this.prevPosition = { "x": 0, "y": 0};
@@ -68,7 +70,6 @@ function panelGrabber ( canvas ) {
 
 				//Scaling corner level
 				if (self.testGrab(attrs.x + attrs.w - corner, attrs.y + attrs.h - corner, corner, corner)) {
-					console.log('here');
 					if (key == self.selected) {
 						oldSelectionPresent = true;
 					}
@@ -149,9 +150,10 @@ function panelGrabber ( canvas ) {
 							var node = self.nodeList[key];
 							var inPoint =  node.inputPoints[j + ''];
 							if (self.testGrab(inPoint.x - node.getIORad(), inPoint.y - node.getIORad(), 2 * node.getIORad() + 5, 2 * node.getIORad() + 5)) {
-								self.nodeList[self.selected].addConnection(key, j, self.nodeList[self.selected].getActiveOutputIndex(), false);
-								self.nodeList[key].addConnection(self.selected, self.nodeList[self.selected].getActiveOutputIndex(), j, true);
-
+								if (!self.nodeList[key].inputIndexIsTaken(j)) {
+									self.nodeList[self.selected].addConnection(key, j, self.nodeList[self.selected].getActiveOutputIndex(), false);
+									self.nodeList[key].addConnection(self.selected, self.nodeList[self.selected].getActiveOutputIndex(), j, true);
+								}
 							}
 						}
 					}
@@ -306,29 +308,23 @@ panelGrabber.prototype.setNetworkDump = function setNetworkDump (domElement) {
 }
 
 panelGrabber.prototype.writeToNetDump = function (text) {
-	this.netDump.textContent += text;
+	this.netDump.innerHTML = text;
 }
 
 panelGrabber.prototype.getNetworkInfo = function () {
-	//this.setNetworkDump('');
+	this.writeToNetDump(JSON.stringify(''));
+	var contents = '';
 	for (var key in this.nodeList) {
-
 		var inputs = this.nodeList[key].getInputs();
 		var outputs = this.nodeList[key].getOutputs();
-		console.log(inputs);
-		//this.setNetworkDump('<br>');
-		this.writeToNetDump(JSON.stringify(inputs));
-		//this.setNetworkDump('<br>');
-		this.writeToNetDump(JSON.stringify(outputs));
-		//console.log("INPUTS:");
-		//this.writeToNetDump(json.parse(inputs[0]));
-		//
-		//console.log("OUTPUTS:");
-		//this.writeToNetDump(outputs[0]);
-		//for (con in inputs) {
-		//	console.log(con);
-		//}
+		contents += key + ' -inputs: ';
+		contents += (JSON.stringify(inputs));
+		contents += '<br>';
+		contents += key + ' -outputs: ';
+		contents += (JSON.stringify(outputs));
+		contents += '<br>';
 	}
+	this.writeToNetDump((contents));
 }
 
 CanvasRenderingContext2D.prototype.gridDraw = function (s) {
@@ -354,7 +350,7 @@ CanvasRenderingContext2D.prototype.gridDraw = function (s) {
 
 CanvasRenderingContext2D.prototype.drawBezierConnection = function (x, y, ex, ey) {
 	this.beginPath();
-	this.lineWidth = 2;
+	this.lineWidth = 3;
 	this.strokeStyle = '#222222';
 	this.moveTo(x, y);
 	var sec = { "x": x + Math.abs(ex - x) / 2, "y": y};
@@ -365,9 +361,12 @@ CanvasRenderingContext2D.prototype.drawBezierConnection = function (x, y, ex, ey
 }
 
 CanvasRenderingContext2D.prototype.drawBezier = function (x, y, ex, ey, leftRight) {
+	var grd = this.createLinearGradient(x, y, ex, ey);
+	grd.addColorStop(0,"#ffffff");
+	grd.addColorStop(1,"#000000");
 	this.beginPath();
-	this.lineWidth = 2;
-	this.strokeStyle = '#222222';
+	this.lineWidth = 3;
+	this.strokeStyle = grd;
 	this.moveTo(x, y);
 	var sec, thir, four;
 	if (!leftRight) {
@@ -376,7 +375,6 @@ CanvasRenderingContext2D.prototype.drawBezier = function (x, y, ex, ey, leftRigh
 		sec = { "x": x - Math.abs(ex - x) / 2, "y": y};
 	}
 	thir = { "x": x + (ex - x) / 2, "y": ey};
-
 	this.bezierCurveTo( sec.x, sec.y, thir.x, thir.y, ex, ey );
 	this.stroke();
 	this.closePath();
