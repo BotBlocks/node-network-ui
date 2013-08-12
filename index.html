@@ -27,7 +27,7 @@
 				var grabby = new panelGrabber(screen);
 				grabby.setNetworkDump(dump);
 				
-				var box = new nodeOb(screen, "First", 150, 150);
+				var box = new nodeOb(screen, "First", "input", 150, 150);
 				grabby.addNode(box);
 				box.addInputPoint();
 				box.addInputPoint();
@@ -37,14 +37,14 @@
 				box.addScriptField();
 				
 				
-				var box2 = new nodeOb(screen, "Second", 10, 10);
+				var box2 = new nodeOb(screen, "Second", "output", 10, 10);
 				grabby.addNode(box2);
 				box2.addInputPoint();
 				box2.addInputPoint();
 				box2.addOutputPoint();
 
 
-				var box3 = new nodeOb(screen, "Third-Node-Object", 300, 350);
+				var box3 = new nodeOb(screen, "Third-Node-Object", "modification", 300, 350);
 				grabby.addNode(box3);
 				box3.addInputPoint();
 				box3.addOutputPoint();

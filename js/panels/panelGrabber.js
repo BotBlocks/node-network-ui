@@ -9,6 +9,7 @@ function panelGrabber ( canvas ) {
 	this.position = { x : 0, y : 0 };
 
 	this.backColor = '#555555';
+	this.toolColor = '#aaaaaa';
 	this.ctx = this.canvas.getContext('2d');
 	this.ctx.lineCap = "round";
 	this.ctx.lineJoin = "round";
@@ -229,10 +230,10 @@ panelGrabber.prototype.redrawNodes = function () {
 	this.nodeList[this.selected].redrawMe(attrs.x, attrs.y, attrs.w, attrs.h);
 	this.nodeList[this.selected].setZIndex(0);
 
+	this.drawConnectionWires();
 	if (this.nodeList[this.selected].getState() == 'WIRE') {
 		this.drawNewWire();
 	}
-	this.drawConnectionWires();
 }
 
 panelGrabber.prototype.settleNodes = function settleNodes() {

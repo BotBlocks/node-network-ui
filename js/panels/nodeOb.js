@@ -1,10 +1,14 @@
 "use strict";
 
-function nodeOb(canvas, id, posX, posY){
+function nodeOb(canvas, id, type, posX, posY){
 	this.ID = id;
+	this.type = type;
 	this.backColor = '#555555';
 	this.fillColor = '#9999aa';
 	this.selColor = '#ccccdd';
+	this.toolColor = '#cccccc';
+	this.lineColor = '#444444';
+	this.borderWidth = 1;
 	this.canvas = canvas;
 
 	this.buffer = 10;
@@ -89,26 +93,29 @@ nodeOb.prototype.keepLastPosition = function keepLastPosition() {
 nodeOb.prototype.redrawMe = function redrawMe(x, y, w, h) {
 	if (this.selected) this.ctx.fillStyle = this.selColor;
 	if (!this.selected) this.ctx.fillStyle = this.fillColor;
-	this.ctx.roundRect(x, y, w, h, this.buffer);
+	this.ctx.roundRect(x, y, w, h, this.buffer, this.borderWidth, this.lineColor);
 
 	this.ctx.beginPath();
-	this.ctx.strokeStyle = '#444444';
-	this.ctx.lineWidth = 2;
+	this.ctx.strokeStyle = this.lineColor;
+	this.ctx.lineWidth = 1;
 	this.ctx.moveTo(this.position.x, this.position.y + this.buffer + this.buffer / 2);
 	this.ctx.lineTo(this.position.x + this.width, this.position.y + this.buffer + this.buffer / 2);
 	this.ctx.stroke();
 	this.ctx.closePath();
 	this.ctx.beginPath();
 
-	this.ctx.strokeStyle = '#aaaaaa';
-	this.ctx.lineWidth = 1;
+	this.ctx.strokeStyle = this.lineColor;
+	this.ctx.fillStyle = this.toolColor;
+	this.ctx.lineWidth = this.borderWidth;
 	this.ctx.moveTo(this.position.x + this.width - this.buffer, this.position.y + this.height - this.buffer);
 	this.ctx.lineTo(this.position.x + this.width, this.position.y + this.height - this.buffer);
-	this.ctx.lineTo(this.position.x + this.width - this.buffer, this.position.y + this.height);
+	//this.ctx.lineTo(this.position.x + this.width - this.buffer, this.position.y + this.height);
+	this.ctx.arcTo(this.position.x + this.width, this.position.y + this.height, this.position.x + this.width - this.buffer, this.position.y + this.height, this.buffer);
 	this.ctx.lineTo(this.position.x + this.width - this.buffer, this.position.y + this.height - this.buffer);
 	
 	this.ctx.stroke();
-
+	this.ctx.fill();
+	
 	this.drawInputPoints();
 	this.drawOutputPoints();
 	this.arrangeMenus();
@@ -129,6 +136,7 @@ nodeOb.prototype.arrangeMenus = function arrangeMenus() {
 	var i = 0;
 	this.ctx.fillStyle = '#000000';
 	this.ctx.font = '8pt Tahoma';
+	this.ctx.fillText(this.type + ' - ', this.position.x + this.width - 3 * this.buffer - this.ID.length * 5 - this.type.length * 5, this.position.y + this.buffer + 2);
 	this.ctx.fillText(this.ID, this.position.x + this.width - 2 * this.buffer - this.ID.length * 5, this.position.y + this.buffer + 2);
 	if (this.selected) {
 		for (var key in this.inputFields) {
@@ -192,20 +200,10 @@ nodeOb.prototype.addScriptField = function addScriptField() {
 //Real connections to other nodes are recorded via this function. Tested as input or output (sourceIO) to the current node. Indeces are also recorded (IOindex).
 nodeOb.prototype.addConnection = function addConnection(connectedNode, otherIndex, localIndex, inputOrOutput) {
 	if (inputOrOutput) {
-//		for (var key in this.inputs) {
-//			if ((localIndex == this.inputs[key].localIndex) || connectedNode == this.inputs[key].node && otherIndex == this.inputs[key].otherIndex && localIndex == this.inputs[key].localIndex) {
-//				return;
-//			}
-//		}
 		this.inputs[this.lenInputs] = { "node": connectedNode, "otherIndex": otherIndex, "localIndex": localIndex };
 		//this.inputs[localIndex] = { "node": connectedNode, "otherIndex": otherIndex, "localIndex": localIndex };
 		this.lenInputs++;
 	} else if (!inputOrOutput) {
-//		for (var key in this.outputs) {
-//			if ( (connectedNode == this.outputs[key].node && otherIndex == this.outputs[key].otherIndex) || connectedNode == this.outputs[key].node && otherIndex == this.outputs[key].otherIndex && localIndex == this.outputs[key].localIndex) {
-//				return;
-//			}
-//		}
 		this.outputs[this.lenOutputs] = { "node": connectedNode, "otherIndex": otherIndex, "localIndex": localIndex };
 		//this.outputs[localIndex] = { "node": connectedNode, "otherIndex": otherIndex, "localIndex": localIndex };
 		this.lenOutputs++;
@@ -215,7 +213,8 @@ nodeOb.prototype.addConnection = function addConnection(connectedNode, otherInde
 nodeOb.prototype.drawInputPoints = function drawInputPoints() {
 	var i;
 	for (i = 0; i < this.lenInputPoints; i++) {
-		this.ctx.circleDraw(this.position.x, this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO, this.radIO);
+		this.ctx.fillStyle = this.toolColor;
+		this.ctx.circleDraw(this.position.x, this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO, this.radIO, this.borderWidth, this.lineColor);
 		this.inputPoints[i + ''] = {"x": this.position.x, "y": this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO};
 	}
 }
@@ -231,7 +230,8 @@ nodeOb.prototype.addOutputPoint = function addOutputPoint() {
 nodeOb.prototype.drawOutputPoints = function () {
 	var i;
 	for (i = 0; i < this.lenOutputPoints; i++) {
-		this.ctx.circleDraw(this.position.x + this.width, this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO, this.radIO);
+		this.ctx.fillStyle = this.toolColor;
+		this.ctx.circleDraw(this.position.x + this.width, this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO, this.radIO, this.borderWidth, this.lineColor);
 		this.outputPoints[i + ''] = {"x": this.position.x + this.width, "y": this.position.y + 3 * this.buffer + 2 * this.buffer * i + i * 2 * this.radIO};
 	}
 }
@@ -332,16 +332,16 @@ nodeOb.prototype.minSizeAdjustment = function () {
 	this.prevScale.y = this.height;
 }
 
-CanvasRenderingContext2D.prototype.circleDraw = function (x, y, r) {
+CanvasRenderingContext2D.prototype.circleDraw = function (x, y, r, lineWidth, lineColor) {
 	this.beginPath();
 	this.arc(x, y, r, 0, 2 * Math.PI, false);
-	this.lineWidth = 2;
-	this.strokeStyle = '#444444';
+	this.lineWidth = lineWidth;
+	this.strokeStyle = lineColor;
 	this.fill();
 	this.stroke();
 }
 
-CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r, lineWidth, lineColor) {
 	if (w < 2 * r) r = w / 2;
 	if (h < 2 * r) r = h / 2;
 	this.beginPath();
@@ -351,8 +351,8 @@ CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
 	this.arcTo(x,   y+h, x,   y,   r);
 	this.arcTo(x,   y,   x+w, y,   r);
 
-	this.strokeStyle = '#444444';
-	this.lineWidth = 2;
+	this.strokeStyle = lineColor;
+	this.lineWidth = lineWidth;
 	this.closePath();
 
 	this.fill();
